@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Unsubscribed • Dioz Group</title>
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 40px;
+  background-color: #1a1a1a;
+  background-image: url('./Contactfotor.jpg');
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  color: #333;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.card {
+  position: relative;
+  z-index: 1;
+  background: rgba(255, 255, 255, 0.88);
+  border-radius: 20px;
+  padding: 30px 25px;
+  max-width: 380px;
+  width: 80%;
+  margin: 0 auto;
+  text-align: center;
+  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  animation: fadeDown 0.6s ease-out;
+}
+
+@keyframes fadeDown {
+  from {
+    opacity: 0;
+    transform: translateY(-40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.icon {
+  font-size: 42px;
+  margin-bottom: 12px;
+}
+
+.card img {
+  max-width: 110px;
+  margin-bottom: 15px;
+}
+
+.card h1 {
+  font-size: 24px;
+  margin-bottom: 10px;
+  color: #10b981;
+  font-weight: 700;
+}
+
+.card p {
+  font-size: 15px;
+  margin-bottom: 12px;
+  color: #333;
+}
+
+.subtitle {
+  margin-bottom: 20px;
+  color: #666;
+  font-size: 14px;
+}
+
+a.button {
+  display: inline-block;
+  background: #2563eb;
+  color: #fff;
+  padding: 12px 34px;
+  border-radius: 10px;
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.5);
+}
+
+a.button:hover {
+  background: #1d4ed8;
+  transform: translateY(-3px);
+  box-shadow: 0 10px 25px rgba(37, 99, 235, 0.7);
+}
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="icon">✅</div>
+  <img src="https://dioz.com/wp-content/uploads/2024/07/logo.svg" alt="Dioz Logo">
+  <h1>You've been unsubscribed</h1>
+  <p>Your email has been successfully removed from our mailing list.</p>
+  <p class="subtitle">We're sorry to see you go.</p>
+  <a class="button" href="/">← Return to Home</a>
+</div>
+
+</body>
+</html>
+
+
