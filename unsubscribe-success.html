@@ -22,12 +22,11 @@ body {
   align-items: center;
   background-color: #1a1a1a;
   background-image: url('./Contactfotor.jpg');
-  background-size: contain;
+  background-size: cover;           /* HD FIX */
   background-position: center;
   background-repeat: no-repeat;
   background-attachment: fixed;
   position: relative;
-  color: #333;
 }
 
 /* Dark overlay */
@@ -35,51 +34,67 @@ body::before {
   content: '';
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.35);
+  background: rgba(0,0,0,0.45);
   z-index: 0;
 }
 
 /* Card */
 .card {
   position: relative;
-  z-index: 1;
-  background: rgba(255,255,255,0.92);
-  border-radius: 20px;
-  padding: 40px 30px;
-  max-width: 420px;
+  z-index: 2;
+  background: rgba(255,255,255,0.95);
+  border-radius: 22px;
+  padding: 45px 35px;
+  max-width: 440px;
   width: 90%;
   text-align: center;
-  box-shadow: 0 30px 80px rgba(0,0,0,0.45);
-  animation: fadeDown 0.6s ease-out;
+  box-shadow: 0 40px 100px rgba(0,0,0,0.55);
+  animation: fadeIn 0.7s ease;
 }
 
-/* Entry animation */
-@keyframes fadeDown {
-  from { opacity:0; transform: translateY(-40px); }
-  to { opacity:1; transform: translateY(0); }
+@keyframes fadeIn {
+  from { opacity:0; transform: scale(0.95); }
+  to { opacity:1; transform: scale(1); }
 }
 
-/* Helicopter wrapper (IMPORTANT FIX) */
+/* Helicopter container */
 .animation-wrapper {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-bottom: 15px;
+  position: relative;
+  height: 180px;
+  margin-bottom: 10px;
+  overflow: visible;
 }
 
-/* Exact helicopter size */
+/* Flying in animation */
 #helicopter-animation {
   width: 180px;
   height: 180px;
+  position: absolute;
+  right: -250px; /* Start off screen */
+  top: 0;
+  animation: flyIn 1.5s ease-out forwards, float 3s ease-in-out infinite 1.5s;
 }
 
-/* Logo */
+/* Fly in from right */
+@keyframes flyIn {
+  to {
+    right: 50%;
+    transform: translateX(50%);
+  }
+}
+
+/* Floating effect */
+@keyframes float {
+  0% { transform: translateX(50%) translateY(0px); }
+  50% { transform: translateX(50%) translateY(-8px); }
+  100% { transform: translateX(50%) translateY(0px); }
+}
+
 .card img {
   max-width: 110px;
-  margin-bottom: 10px;
+  margin: 5px 0 15px;
 }
 
-/* Heading */
 .card h1 {
   font-size: 24px;
   margin-bottom: 10px;
@@ -107,13 +122,13 @@ a.button {
   text-decoration: none;
   font-weight: 600;
   transition: 0.3s ease;
-  box-shadow: 0 6px 20px rgba(37,99,235,0.5);
+  box-shadow: 0 8px 25px rgba(37,99,235,0.5);
 }
 
 a.button:hover {
   background: #1d4ed8;
   transform: translateY(-3px);
-  box-shadow: 0 10px 25px rgba(37,99,235,0.7);
+  box-shadow: 0 15px 35px rgba(37,99,235,0.7);
 }
 </style>
 </head>
@@ -122,7 +137,6 @@ a.button:hover {
 
 <div class="card">
 
-  <!-- LOCKED CENTER WRAPPER -->
   <div class="animation-wrapper">
     <div id="helicopter-animation"></div>
   </div>
