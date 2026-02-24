@@ -1,156 +1,162 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Unsubscribed • Dioz Group</title>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.9.6/lottie.min.js"></script>
-
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unsubscribed | Dioz Group</title>
 <style>
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
 
-body {
-  font-family: Arial, Helvetica, sans-serif;
-  min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background-image: url('./Contactfotor.jpg');
-  background-size: 110%;              /* HD FIX */
-  background-position: center;
-  background-repeat: no-repeat;
-  background-attachment: fixed;
-  position: relative;
-}
+    body {
+        font-family: Arial, sans-serif;
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+        overflow: hidden;
+    }
 
-/* Dark cinematic overlay */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.55);
-  z-index: 0;
-}
+    body::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1;
+    }
 
-/* ================= CARD ================= */
+    video {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        min-width: 100%;
+        min-height: 100%;
+        width: auto;
+        height: auto;
+        transform: translate(-50%, -50%);
+        object-fit: cover;
+        z-index: 0;
+    }
 
-.card {
-  position: relative;
-  z-index: 2;
-  background: rgba(255,255,255,0.95);
-  border-radius: 22px;
-  padding: 45px 35px;
-  max-width: 440px;
-  width: 90%;
-  text-align: center;
-  box-shadow: 0 40px 100px rgba(0,0,0,0.55);
-  animation: fadeIn 0.7s ease;
-}
+    .success-container {
+        position: relative;
+        z-index: 2;
+        background-color: rgba(255, 255, 255, 0.12);
+        padding: 50px 45px;
+        border-radius: 16px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        text-align: center;
+        max-width: 500px;
+        width: 90%;
+        backdrop-filter: blur(15px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        animation: slideUp 0.8s ease-out;
+    }
 
-@keyframes fadeIn {
-  from { opacity:0; transform: scale(0.95); }
-  to { opacity:1; transform: scale(1); }
-}
+    @keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(40px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
 
-.card img {
-  max-width: 110px;
-  margin: 5px 0 15px;
-}
+    .success-container img {
+        max-width: 140px;
+        margin-bottom: 25px;
+        opacity: 0.95;
+    }
 
-.card h1 {
-  font-size: 24px;
-  margin-bottom: 10px;
-  color: #10b981;
-  font-weight: 700;
-}
+    h2 {
+        color: #00d084;
+        margin-bottom: 15px;
+        font-size: 32px;
+        font-weight: 700;
+    }
 
-.card p {
-  font-size: 15px;
-  margin-bottom: 12px;
-}
+    p {
+        color: #e8e8e8;
+        font-size: 16px;
+        margin-bottom: 15px;
+        line-height: 1.6;
+    }
 
-.subtitle {
-  margin-bottom: 22px;
-  color: #666;
-  font-size: 14px;
-}
+    .sorry-text {
+        color: #b0b0b0;
+        font-size: 15px;
+        margin-bottom: 30px;
+        font-style: italic;
+    }
 
-a.button {
-  display: inline-block;
-  background: #2563eb;
-  color: #fff;
-  padding: 12px 34px;
-  border-radius: 10px;
-  text-decoration: none;
-  font-weight: 600;
-  transition: 0.3s ease;
-  box-shadow: 0 8px 25px rgba(37,99,235,0.5);
-}
+    a {
+        display: inline-block;
+        padding: 12px 40px;
+        background-color: #0066ff;
+        color: #ffffff;
+        text-decoration: none;
+        border-radius: 8px;
+        font-size: 15px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(0, 102, 255, 0.3);
+    }
 
-a.button:hover {
-  background: #1d4ed8;
-  transform: translateY(-3px);
-  box-shadow: 0 15px 35px rgba(37,99,235,0.7);
-}
+    a:hover {
+        background-color: #0052cc;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0, 102, 255, 0.4);
+    }
 
-/* ================= HELICOPTER ================= */
+    a:active {
+        transform: translateY(0);
+    }
 
-/* Outside card */
-#helicopter-animation {
-  width: 220px;
-  height: 220px;
-  position: fixed;
-  top: 35%;
-  right: -300px;            /* start off screen */
-  z-index: 1;
-  animation: flyIn 2s ease-out forwards,
-             float 4s ease-in-out infinite 2s;
-}
+    .checkmark {
+        font-size: 60px;
+        color: #00d084;
+        margin-bottom: 15px;
+        animation: popIn 0.6s ease-out;
+    }
 
-/* Fly from right to map area */
-@keyframes flyIn {
-  to {
-    right: 12%;             /* adjust position here */
-  }
-}
-
-/* Floating effect */
-@keyframes float {
-  0% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
-  100% { transform: translateY(0px); }
-}
+    @keyframes popIn {
+        0% {
+            transform: scale(0);
+        }
+        50% {
+            transform: scale(1.1);
+        }
+        100% {
+            transform: scale(1);
+        }
+    }
 </style>
 </head>
-
 <body>
 
-<!-- Helicopter OUTSIDE card -->
-<div id="helicopter-animation"></div>
+<!-- Video Background -->
+<video autoplay muted loop playsinline>
+    <source src="https://dioz.com/wp-content/uploads/2024/06/Banner-Video-Final.mp4" type="video/mp4">
+    Your browser does not support the video tag.
+</video>
 
-<div class="card">
-  <img src="https://dioz.com/wp-content/uploads/2024/07/logo.svg" alt="Dioz Logo">
-  <h1>You've been unsubscribed</h1>
-  <p>Your email has been successfully removed from our mailing list.</p>
-  <p class="subtitle">We're sorry to see you go.</p>
-  <a class="button" href="/">← Return to Home</a>
+<div class="success-container">
+    <img src="https://dioz.com/wp-content/uploads/2024/07/logo.svg" alt="Dioz Logo">
+    <div class="checkmark">✓</div>
+    <h2>You've been unsubscribed</h2>
+    <p>Your email has been successfully removed from our mailing list.</p>
+    <p class="sorry-text">We're sorry to see you go.</p>
+    <a href="https://diozglobal.us/">← Return to Home</a>
 </div>
-
-<script>
-lottie.loadAnimation({
-  container: document.getElementById('helicopter-animation'),
-  renderer: 'svg',
-  loop: true,
-  autoplay: true,
-  path: 'Helicopter.json'
-});
-</script>
 
 </body>
 </html>
-
