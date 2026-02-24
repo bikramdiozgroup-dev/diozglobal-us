@@ -267,7 +267,8 @@ document.getElementById('unsubscribeForm').addEventListener('submit', async func
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
             },
-            body: 'email=' + encodeURIComponent(email)
+            body: 'email=' + encodeURIComponent(email),
+            timeout: 5000
         });
         
         if (response.redirected) {
@@ -302,7 +303,7 @@ document.getElementById('unsubscribeForm').addEventListener('submit', async func
             
             submitBtn.disabled = false;
         } else {
-            successEl.textContent = '✓ Email validated successfully. Redirecting...';
+            successEl.textContent = '✓ Email successfully unsubscribed!';
             successEl.classList.add('show');
             setTimeout(() => {
                 window.location.href = '/unsubscribe-success.html';
