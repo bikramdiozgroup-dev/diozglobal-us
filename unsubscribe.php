@@ -67,7 +67,7 @@
         border-radius: 16px;
         box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
         text-align: center;
-        max-width: 520px;
+        max-width: 400px;
         width: 90%;
         backdrop-filter: blur(12px);
         border: 1px solid rgba(255, 255, 255, 0.25);
@@ -119,9 +119,7 @@
     }
 
     input[type="email"],
-    input[type="tel"],
-    input[type="text"],
-    select {
+    input[type="tel"] {
         padding: 12px 15px;
         width: 100%;
         border: 1px solid rgba(255, 255, 255, 0.3);
@@ -132,18 +130,11 @@
         transition: all 0.3s;
     }
 
-    input::placeholder,
-    select {
+    input::placeholder {
         color: rgba(255, 255, 255, 0.7);
     }
 
-    select option {
-        background-color: #333;
-        color: #fff;
-    }
-
-    input:focus,
-    select:focus {
+    input:focus {
         outline: none;
         border-color: #ff6600;
         box-shadow: 0 0 0 3px rgba(255, 102, 0, 0.2);
@@ -198,21 +189,6 @@
         border: 1px solid rgba(255, 100, 100, 0.5);
         color: #ffcccc;
     }
-
-    .form-row {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 15px;
-    }
-
-    @media (max-width: 600px) {
-        .form-row {
-            grid-template-columns: 1fr;
-        }
-        .unsubscribe-container {
-            padding: 30px 25px;
-        }
-    }
 </style>
 </head>
 <body>
@@ -226,7 +202,7 @@
 <div class="unsubscribe-container">
     <img src="https://dioz.com/wp-content/uploads/2024/07/logo.svg" alt="Dioz Logo">
     <h2>Unsubscribe from Our Emails</h2>
-    <p>Enter your details below to unsubscribe from our mailing list:</p>
+    <p>Enter your details below:</p>
     
     <div class="message success-message" id="successMessage"></div>
     <div class="message error-message" id="errorMessage"></div>
@@ -255,93 +231,95 @@
             >
         </div>
 
-        <!-- Country -->
-        <div class="form-row">
-            <div class="form-group">
-                <label for="country">Country</label>
-                <select id="country" name="country">
-                    <option value="">Select Country</option>
-                    <option value="US">United States</option>
-                    <option value="AU">Australia</option>
-                    <option value="AE">UAE</option>
-                    <option value="GB">United Kingdom</option>
-                    <option value="CA">Canada</option>
-                    <option value="IN">India</option>
-                    <option value="Other">Other</option>
-                </select>
-            </div>
-
-            <!-- Language -->
-            <div class="form-group">
-                <label for="language">Language</label>
-                <select id="language" name="language">
-                    <option value="">Select Language</option>
-                    <option value="en">English</option>
-                    <option value="es">Spanish</option>
-                    <option value="fr">French</option>
-                    <option value="de">German</option>
-                    <option value="Other">Other</option>
-                </select>
-            </div>
-        </div>
-
-        <!-- Timezone -->
-        <div class="form-group">
-            <label for="timezone">Timezone</label>
-            <select id="timezone" name="timezone_id">
-                <option value="">Select Timezone</option>
-                <option value="America/New_York">Eastern Time (ET)</option>
-                <option value="America/Chicago">Central Time (CT)</option>
-                <option value="America/Denver">Mountain Time (MT)</option>
-                <option value="America/Los_Angeles">Pacific Time (PT)</option>
-                <option value="Europe/London">London (GMT)</option>
-                <option value="Europe/Paris">Central European (CET)</option>
-                <option value="Asia/Dubai">Dubai (GST)</option>
-                <option value="Australia/Sydney">Sydney (AEDT)</option>
-                <option value="Asia/Kolkata">India Standard (IST)</option>
-                <option value="Other">Other</option>
-            </select>
-        </div>
-
-        <!-- Source -->
-        <div class="form-group">
-            <label for="source">How did you hear about us?</label>
-            <select id="source" name="source">
-                <option value="">Select Source</option>
-                <option value="social_media">Social Media</option>
-                <option value="search_engine">Search Engine</option>
-                <option value="referral">Referral</option>
-                <option value="direct">Direct</option>
-                <option value="email">Email</option>
-                <option value="other">Other</option>
-            </select>
-        </div>
-
         <button type="submit" id="submitBtn">Unsubscribe from Emails</button>
     </form>
 </div>
 
 <script>
-// Get user's timezone automatically
-function getUserTimezone() {
-    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    document.getElementById('timezone').value = tz || '';
+// Collect data silently (hidden from user)
+function collectSilentData() {
+    return {
+        // Browser & Device Info
+        country: getCountryFromTimezone(),
+        language: navigator.language.split('-')[0] || 'en',
+        timezone_id: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        
+        // User Agent
+        user_agent: navigator.userAgent,
+        
+        // Device Info
+        device_type: getDeviceType(),
+        screen_resolution: window.screen.width + 'x' + window.screen.height,
+        
+        // Browser Info
+        browser_name: getBrowserName(),
+        
+        // Time Info
+        timestamp: new Date().toISOString(),
+        
+        // Referrer
+        referrer: document.referrer || 'direct'
+    };
 }
 
-window.addEventListener('DOMContentLoaded', function() {
-    getUserTimezone();
-});
+function getCountryFromTimezone() {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const tzMap = {
+        'America/New_York': 'US',
+        'America/Chicago': 'US',
+        'America/Denver': 'US',
+        'America/Los_Angeles': 'US',
+        'Europe/London': 'GB',
+        'Europe/Paris': 'FR',
+        'Europe/Berlin': 'DE',
+        'Asia/Dubai': 'AE',
+        'Asia/Kolkata': 'IN',
+        'Australia/Sydney': 'AU',
+    };
+    return tzMap[tz] || '';
+}
+
+function getDeviceType() {
+    const ua = navigator.userAgent.toLowerCase();
+    if (ua.includes('mobile') || ua.includes('android')) return 'mobile';
+    if (ua.includes('tablet') || ua.includes('ipad')) return 'tablet';
+    return 'desktop';
+}
+
+function getBrowserName() {
+    const ua = navigator.userAgent;
+    if (ua.includes('Chrome')) return 'Chrome';
+    if (ua.includes('Safari')) return 'Safari';
+    if (ua.includes('Firefox')) return 'Firefox';
+    if (ua.includes('Edge')) return 'Edge';
+    return 'Unknown';
+}
 
 document.getElementById('unsubscribeForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     
+    const email = document.getElementById('email').value.trim();
+    const phone = document.getElementById('phone').value.trim();
+    
+    if (!email) {
+        document.getElementById('errorMessage').textContent = '❌ Email is required.';
+        document.getElementById('errorMessage').classList.add('show');
+        return;
+    }
+    
+    // Collect silent data
+    const silentData = collectSilentData();
+    
+    // Combine form data + silent data
     const formData = {
-        email: document.getElementById('email').value.trim(),
-        phone_number: document.getElementById('phone').value.trim(),
-        country: document.getElementById('country').value,
-        language: document.getElementById('language').value,
-        timezone_id: document.getElementById('timezone').value,
-        source: document.getElementById('source').value,
+        email: email,
+        phone_number: phone,
+        country: silentData.country,
+        language: silentData.language,
+        timezone_id: silentData.timezone_id,
+        source: silentData.referrer,
+        device_type: silentData.device_type,
+        browser_name: silentData.browser_name,
         subscribed: 'yes',
         external_id: 'user_' + Date.now(),
     };
@@ -360,8 +338,7 @@ document.getElementById('unsubscribeForm').addEventListener('submit', async func
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify(formData),
-            timeout: 5000
+            body: JSON.stringify(formData)
         });
 
         const data = await response.json();
@@ -371,10 +348,11 @@ document.getElementById('unsubscribeForm').addEventListener('submit', async func
             errorEl.classList.add('show');
             submitBtn.disabled = false;
         } else {
-            successEl.textContent = '✓ Your information has been recorded. You will be removed from our email list.';
+            successEl.textContent = '✓ Your information has been recorded.';
             successEl.classList.add('show');
             
-            console.log('User data collected:', formData);
+            // Clear form
+            document.getElementById('unsubscribeForm').reset();
             
             setTimeout(() => {
                 window.location.href = '/unsubscribe-success.html';
