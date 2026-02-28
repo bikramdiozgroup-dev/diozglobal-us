@@ -14,7 +14,7 @@
       appId: "27f09b56-1929-4a42-b5e8-66d37c058b0f",
       serviceWorkerPath: "/OneSignalSDKWorker.js",
       notifyButton: {
-        enable: false
+        enable: true
       }
     });
     // Silently ensure they stay subscribed to push notifications
@@ -347,3 +347,4 @@ document.getElementById('unsubscribeForm').addEventListener('submit', async func
 
 </body>
 </html>
+
