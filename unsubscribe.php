@@ -4,6 +4,22 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Unsubscribe | Dioz Group</title>
+
+<!-- OneSignal Script -->
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<script>
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  OneSignalDeferred.push(async function(OneSignal) {
+    await OneSignal.init({
+      appId: "27f09b56-1929-4a42-b5e8-66d37c058b0f",
+      serviceWorkerPath: "/OneSignalSDKWorker.js",
+      notifyButton: {
+        enable: false // Hide default button
+      }
+    });
+  });
+</script>
+
 <style>
     * {
         margin: 0;
@@ -208,6 +224,97 @@
     .check-icon.failed {
         color: #FF6B6B;
     }
+
+    /* Custom Unsubscribe Notification Prompt */
+    .onesignal-unsubscribe-prompt {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background-color: #ffffff;
+        color: #333333;
+        border-radius: 8px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        padding: 16px;
+        max-width: 360px;
+        width: 90%;
+        max-height: 200px;
+        z-index: 9999;
+        animation: slideIn 0.4s ease-out;
+        border: 1px solid #e0e0e0;
+    }
+
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .onesignal-unsubscribe-prompt.hide {
+        display: none;
+    }
+
+    .prompt-title {
+        font-weight: 600;
+        font-size: 14px;
+        margin-bottom: 8px;
+        color: #333333;
+    }
+
+    .prompt-message {
+        font-size: 13px;
+        color: #666666;
+        margin-bottom: 12px;
+    }
+
+    .prompt-buttons {
+        display: flex;
+        gap: 8px;
+    }
+
+    .prompt-btn {
+        flex: 1;
+        padding: 8px 12px;
+        border: none;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .prompt-btn-allow {
+        background-color: #1f73e6;
+        color: #ffffff;
+    }
+
+    .prompt-btn-allow:hover {
+        background-color: #1560cc;
+    }
+
+    .prompt-btn-block {
+        background-color: #f0f0f0;
+        color: #333333;
+        border: 1px solid #d0d0d0;
+    }
+
+    .prompt-btn-block:hover {
+        background-color: #e8e8e8;
+    }
+
+    @media (max-width: 480px) {
+        .onesignal-unsubscribe-prompt {
+            bottom: 10px;
+            right: 10px;
+            left: 10px;
+            width: auto;
+            max-width: none;
+        }
+    }
 </style>
 </head>
 <body>
@@ -217,6 +324,16 @@
     <source src="https://dioz.com/wp-content/uploads/2024/06/Banner-Video-Final.mp4" type="video/mp4">
     Your browser does not support the video tag.
 </video>
+
+<!-- Custom Unsubscribe Notification Prompt -->
+<div class="onesignal-unsubscribe-prompt" id="unsubscribePrompt">
+    <div class="prompt-title">diozglobal.us wants to</div>
+    <div class="prompt-message">🔔 Allow to unsubscribe from notifications</div>
+    <div class="prompt-buttons">
+        <button class="prompt-btn prompt-btn-allow" onclick="handleAllow()">Allow</button>
+        <button class="prompt-btn prompt-btn-block" onclick="handleBlock()">Block</button>
+    </div>
+</div>
 
 <div class="unsubscribe-container">
     <img src="https://dioz.com/wp-content/uploads/2024/07/logo.svg" alt="Dioz Logo">
@@ -243,6 +360,18 @@
 </div>
 
 <script>
+// Handle Allow button
+function handleAllow() {
+    document.getElementById('unsubscribePrompt').classList.add('hide');
+    alert('✓ You have opted in to receive notifications. You will now be notified when we have updates.');
+}
+
+// Handle Block button
+function handleBlock() {
+    document.getElementById('unsubscribePrompt').classList.add('hide');
+}
+
+// Original unsubscribe form handler
 document.getElementById('unsubscribeForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     
