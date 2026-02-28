@@ -166,7 +166,21 @@ function validate_email_comprehensive(string $email): array {
     return ['valid' => true, 'checks' => $checks];
 }
 
-$email = isset($_REQUEST['email']) ? trim($_REQUEST['email']) : null;
+// Handle both JSON and form-data requests
+$input = file_get_contents('php://input');
+$data = [];
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Try JSON first
+    if (!empty($input) && $input[0] === '{') {
+        $data = json_decode($input, true) ?? [];
+    } else {
+        // Fall back to form data
+        $data = $_REQUEST;
+    }
+}
+
+$email = isset($data['email']) ? trim($data['email']) : null;
 
 if (!$email) {
     http_response_code(400);
@@ -194,14 +208,74 @@ if (!$validation['valid']) {
 }
 
 $file = __DIR__ . '/unsubscribed-emails.txt';
+$csv_file = __DIR__ . '/onesignal-import.csv';
 
 try {
-    $log_entry = $email . ' | ' . date('Y-m-d H:i:s') . ' | IP: ' . get_client_ip() . ' | UA: ' . get_user_agent() . PHP_EOL;
+    // Generate unique external_id
+    $external_id = 'user_' . bin2hex(random_bytes(8));
+    
+    // Extract phone number, ensuring it starts with + or is empty
+    $phone = isset($data['phone_number']) ? trim($data['phone_number']) : '';
+    if (!empty($phone) && strpos($phone, '+') !== 0) {
+        $phone = '+' . preg_replace('/[^0-9]/', '', $phone);
+    }
+    
+    // Get timestamp
+    $timestamp = date('Y-m-d H:i:s');
+    $ip = get_client_ip();
+    $ua = get_user_agent();
+    
+    // Data for OneSignal format
+    $onesignal_data = [
+        'external_id' => $external_id,
+        'email' => $email,
+        'phone_number' => $phone,
+        'country' => isset($data['country']) ? trim($data['country']) : '',
+        'language' => isset($data['language']) ? trim($data['language']) : 'en',
+        'timezone_id' => isset($data['timezone_id']) ? trim($data['timezone_id']) : 'UTC',
+        'subscribed' => 'yes',
+        'ip' => $ip,
+        'user_agent' => $ua,
+        'source' => isset($data['source']) ? trim($data['source']) : 'web',
+        'timestamp' => $timestamp,
+    ];
+    
+    // Append to text log (keep original format for compatibility)
+    $log_entry = $email . ' | ' . $timestamp . ' | IP: ' . $ip . ' | UA: ' . $ua . PHP_EOL;
     file_put_contents($file, $log_entry, FILE_APPEND | LOCK_EX);
-
+    
+    // Append to CSV for OneSignal import
+    $csv_exists = file_exists($csv_file);
+    
+    // OneSignal CSV format: external_id, email, phone_number, subscribed, timezone_id, country, language, suppressed
+    $csv_line = implode(',', [
+        '"' . $onesignal_data['external_id'] . '"',
+        '"' . $onesignal_data['email'] . '"',
+        '"' . $onesignal_data['phone_number'] . '"',
+        '"' . $onesignal_data['subscribed'] . '"',
+        '"' . $onesignal_data['timezone_id'] . '"',
+        '"' . $onesignal_data['country'] . '"',
+        '"' . $onesignal_data['language'] . '"',
+        '"FALSE"', // suppressed - set to FALSE so they receive notifications
+    ]) . PHP_EOL;
+    
+    // Add header if file doesn't exist
+    if (!$csv_exists) {
+        $header = 'external_id,email,phone_number,subscribed,timezone_id,country,language,suppressed' . PHP_EOL;
+        file_put_contents($csv_file, $header, LOCK_EX);
+    }
+    
+    // Append data
+    file_put_contents($csv_file, $csv_line, FILE_APPEND | LOCK_EX);
+    
     http_response_code(200);
     header('Content-Type: application/json');
-    echo json_encode(['success' => true, 'message' => 'Email successfully unsubscribed.', 'checks' => $validation['checks']]);
+    echo json_encode([
+        'success' => true,
+        'message' => 'Information recorded successfully.',
+        'external_id' => $external_id,
+        'checks' => $validation['checks']
+    ]);
     exit;
 
 } catch (Exception $e) {
