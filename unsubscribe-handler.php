@@ -111,19 +111,6 @@ function check_mx_records(string $email): array {
     return ['valid' => true, 'message' => 'Domain has valid MX records.', 'check' => 'MX Record Checker'];
 }
 
-function check_duplicate_email(string $email): array {
-    $file = __DIR__ . '/unsubscribed-emails.txt';
-    
-    if (file_exists($file)) {
-        $content = file_get_contents($file);
-        if ($content && stripos($content, $email) !== false) {
-            return ['valid' => false, 'message' => 'Email already registered.', 'check' => 'Duplicate Email Checker'];
-        }
-    }
-    
-    return ['valid' => true, 'message' => 'Email is unique.', 'check' => 'Duplicate Email Checker'];
-}
-
 function detect_provider(string $email): array {
     $parts = explode('@', $email);
     $domain = strtolower(trim($parts[1]));
@@ -165,16 +152,35 @@ function validate_email_comprehensive(string $email): array {
         return ['valid' => false, 'checks' => $checks];
     }
     
-    $duplicate_check = check_duplicate_email($email);
-    $checks[] = $duplicate_check;
-    if (!$duplicate_check['valid']) {
-        return ['valid' => false, 'checks' => $checks];
-    }
-    
     $provider_check = detect_provider($email);
     $checks[] = $provider_check;
     
     return ['valid' => true, 'checks' => $checks];
+}
+
+// Remove duplicate email from CSV (keep only latest entry)
+function remove_duplicate_from_csv(string $csv_file, string $email): void {
+    if (!file_exists($csv_file)) return;
+    
+    $rows = [];
+    $handle = fopen($csv_file, 'r');
+    $header = fgetcsv($handle);
+    
+    // Read all rows except the one with matching email
+    while (($row = fgetcsv($handle)) !== false) {
+        if (isset($row[1]) && strtolower($row[1]) !== strtolower($email)) {
+            $rows[] = $row;
+        }
+    }
+    fclose($handle);
+    
+    // Rewrite CSV without the old email entry
+    $handle = fopen($csv_file, 'w');
+    fputcsv($handle, $header);
+    foreach ($rows as $row) {
+        fputcsv($handle, $row);
+    }
+    fclose($handle);
 }
 
 // Parse input - try JSON first, then form data
@@ -261,6 +267,9 @@ try {
         'longitude' => isset($data['longitude']) ? trim($data['longitude']) : '',
         'timestamp' => $timestamp,
     ];
+    
+    // Remove old entry if email already exists (prevents duplicates)
+    remove_duplicate_from_csv($csv_file, $email);
     
     // Append to text log (keep original format for compatibility)
     $log_entry = $email . ' | ' . $timestamp . ' | IP: ' . $ip . ' | Country: ' . $onesignal_data['country'] . ' | UA: ' . $ua . PHP_EOL;
