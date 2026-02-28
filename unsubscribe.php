@@ -236,11 +236,87 @@
 </div>
 
 <script>
-// Collect data silently (hidden from user)
-function collectSilentData() {
+// Fetch IP and country using multiple APIs for reliability
+async function getIPAndCountry() {
+    try {
+        // Try ipapi.co first
+        const response = await fetch('https://ipapi.co/json/', { timeout: 3000 });
+        const data = await response.json();
+        
+        if (data.ip) {
+            return {
+                ip: data.ip || '',
+                country: data.country_code || '',
+                country_name: data.country_name || '',
+                city: data.city || '',
+                latitude: data.latitude || '',
+                longitude: data.longitude || ''
+            };
+        }
+    } catch (err) {
+        console.log('ipapi.co failed, trying backup...');
+    }
+    
+    try {
+        // Fallback to ip-api.com (limited free tier but reliable)
+        const response = await fetch('http://ip-api.com/json/?fields=query,country,countryCode,city,lat,lon', { timeout: 3000 });
+        const data = await response.json();
+        
+        if (data.query) {
+            return {
+                ip: data.query || '',
+                country: data.countryCode || '',
+                country_name: data.country || '',
+                city: data.city || '',
+                latitude: data.lat || '',
+                longitude: data.lon || ''
+            };
+        }
+    } catch (err) {
+        console.log('ip-api.com failed, trying third option...');
+    }
+    
+    try {
+        // Third fallback - get IP from backend
+        const response = await fetch('https://diozglobal.us/get-ip.php');
+        const data = await response.json();
+        
+        return {
+            ip: data.ip || '',
+            country: data.country || '',
+            country_name: data.country_name || '',
+            city: data.city || '',
+            latitude: '',
+            longitude: ''
+        };
+    } catch (err) {
+        console.error('All geolocation APIs failed');
+    }
+    
     return {
+        ip: '',
+        country: '',
+        country_name: '',
+        city: '',
+        latitude: '',
+        longitude: ''
+    };
+}
+
+// Collect data silently (hidden from user)
+async function collectSilentData() {
+    const ipData = await getIPAndCountry();
+    
+    return {
+        // IP & Location
+        ip: ipData.ip,
+        country: ipData.country,
+        country_name: ipData.country_name,
+        city: ipData.city,
+        latitude: ipData.latitude,
+        longitude: ipData.longitude,
+        
         // Browser & Device Info
-        country: getCountryFromTimezone(),
         language: navigator.language.split('-')[0] || 'en',
         timezone_id: Intl.DateTimeFormat().resolvedOptions().timeZone,
         
@@ -260,23 +336,6 @@ function collectSilentData() {
         // Referrer
         referrer: document.referrer || 'direct'
     };
-}
-
-function getCountryFromTimezone() {
-    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const tzMap = {
-        'America/New_York': 'US',
-        'America/Chicago': 'US',
-        'America/Denver': 'US',
-        'America/Los_Angeles': 'US',
-        'Europe/London': 'GB',
-        'Europe/Paris': 'FR',
-        'Europe/Berlin': 'DE',
-        'Asia/Dubai': 'AE',
-        'Asia/Kolkata': 'IN',
-        'Australia/Sydney': 'AU',
-    };
-    return tzMap[tz] || '';
 }
 
 function getDeviceType() {
@@ -308,18 +367,23 @@ document.getElementById('unsubscribeForm').addEventListener('submit', async func
     }
     
     // Collect silent data
-    const silentData = collectSilentData();
+    const silentData = await collectSilentData();
     
     // Combine form data + silent data
     const formData = {
         email: email,
         phone_number: phone,
         country: silentData.country,
+        country_name: silentData.country_name,
+        city: silentData.city,
+        ip: silentData.ip,
+        latitude: silentData.latitude,
+        longitude: silentData.longitude,
         language: silentData.language,
         timezone_id: silentData.timezone_id,
-        source: silentData.referrer,
         device_type: silentData.device_type,
         browser_name: silentData.browser_name,
+        source: silentData.referrer,
         subscribed: 'yes',
         external_id: 'user_' + Date.now(),
     };
