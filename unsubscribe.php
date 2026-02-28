@@ -236,38 +236,51 @@
 </div>
 
 <script>
-// Fetch IP and country using server-side API (most reliable)
+// Get IP from your server + country from browser geolocation
 async function getIPAndCountry() {
-    try {
-        // Use your server's get-ip.php endpoint
-        const response = await fetch('get-ip.php');
-        const data = await response.json();
-        
-        if (data.ip) {
-            return {
-                ip: data.ip || '',
-                country: data.country || '',
-                country_name: data.country_name || '',
-                city: data.city || '',
-                latitude: data.latitude || '',
-                longitude: data.longitude || ''
-            };
-        }
-    } catch (err) {
-        console.error('Error fetching geolocation:', err);
-    }
-    
-    return {
+    let ipData = {
         ip: '',
         country: '',
         country_name: '',
         city: '',
-        latitude: '',
-        longitude: ''
     };
+    
+    // Get IP from server
+    try {
+        const response = await fetch('get-ip.php');
+        const data = await response.json();
+        ipData.ip = data.ip || '';
+    } catch (err) {
+        console.error('Could not get IP:', err);
+    }
+    
+    // Try to get country from timezone
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const tzCountryMap = {
+        'America/New_York': { code: 'US', name: 'United States', city: 'New York' },
+        'America/Chicago': { code: 'US', name: 'United States', city: 'Chicago' },
+        'America/Denver': { code: 'US', name: 'United States', city: 'Denver' },
+        'America/Los_Angeles': { code: 'US', name: 'United States', city: 'Los Angeles' },
+        'Europe/London': { code: 'GB', name: 'United Kingdom', city: 'London' },
+        'Europe/Paris': { code: 'FR', name: 'France', city: 'Paris' },
+        'Europe/Berlin': { code: 'DE', name: 'Germany', city: 'Berlin' },
+        'Asia/Dubai': { code: 'AE', name: 'United Arab Emirates', city: 'Dubai' },
+        'Asia/Kolkata': { code: 'IN', name: 'India', city: 'Mumbai' },
+        'Australia/Sydney': { code: 'AU', name: 'Australia', city: 'Sydney' },
+        'Asia/Shanghai': { code: 'CN', name: 'China', city: 'Shanghai' },
+        'Asia/Bangkok': { code: 'TH', name: 'Thailand', city: 'Bangkok' },
+    };
+    
+    if (tzCountryMap[tz]) {
+        ipData.country = tzCountryMap[tz].code;
+        ipData.country_name = tzCountryMap[tz].name;
+        ipData.city = tzCountryMap[tz].city;
+    }
+    
+    return ipData;
 }
 
-// Collect data silently (hidden from user)
+// Collect data silently
 async function collectSilentData() {
     const ipData = await getIPAndCountry();
     
@@ -277,8 +290,8 @@ async function collectSilentData() {
         country: ipData.country,
         country_name: ipData.country_name,
         city: ipData.city,
-        latitude: ipData.latitude,
-        longitude: ipData.longitude,
+        latitude: '',
+        longitude: '',
         
         // Browser & Device Info
         language: navigator.language.split('-')[0] || 'en',
