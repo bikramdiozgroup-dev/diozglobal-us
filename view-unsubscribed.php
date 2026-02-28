@@ -1,58 +1,58 @@
 <?php
 // view-unsubscribed.php
-// Reads from unsubscribed-emails.txt and displays in table format
+// Reads from both text log and CSV, displays in table format
+// Includes export to CSV for OneSignal import
 
-$file = __DIR__ . '/unsubscribed-emails.txt';
+$txt_file = __DIR__ . '/unsubscribed-emails.txt';
+$csv_file = __DIR__ . '/onesignal-import.csv';
 $rows = [];
 $error = null;
 
-if (file_exists($file)) {
-    $content = file_get_contents($file);
-    if ($content) {
-        $lines = array_filter(array_map('trim', explode("\n", $content)));
-        foreach ($lines as $line) {
-            // Parse new format: "email@example.com | 2025-02-19 18:33:36 | IP: 122.161.240.152 | UA: Mozilla/5.0..."
-            if (preg_match('/^(.+?)\s*\|\s*(.+?)\s*\|\s*IP:\s*(.+?)\s*\|\s*UA:\s*(.+)$/', $line, $matches)) {
-                $rows[] = [
-                    'email' => trim($matches[1]),
-                    'timestamp' => trim($matches[2]),
-                    'ip' => trim($matches[3]),
-                    'source' => 'web',
-                    'user_agent' => trim($matches[4])
-                ];
-            } else if (preg_match('/^(.+?)\s*-\s*(.+?)\s*-\s*IP:\s*(.+)$/', $line, $matches)) {
-                // Fallback: old format
-                $rows[] = [
-                    'email' => trim($matches[1]),
-                    'timestamp' => trim($matches[2]),
-                    'ip' => trim($matches[3]),
-                    'source' => 'web',
-                    'user_agent' => 'N/A'
-                ];
-            } else if (filter_var(trim(explode('|', $line)[0]), FILTER_VALIDATE_EMAIL)) {
-                // Just email
-                $rows[] = [
-                    'email' => trim(explode('|', $line)[0]),
-                    'timestamp' => date('Y-m-d H:i:s'),
-                    'ip' => 'N/A',
-                    'source' => 'web',
-                    'user_agent' => 'N/A'
-                ];
-            }
+// Read from CSV (primary source for OneSignal data)
+if (file_exists($csv_file)) {
+    $handle = fopen($csv_file, 'r');
+    $header = fgetcsv($handle); // Skip header
+    
+    while (($row = fgetcsv($handle)) !== false) {
+        if (count($row) >= 8) {
+            $rows[] = [
+                'external_id' => $row[0] ?? '',
+                'email' => $row[1] ?? '',
+                'phone_number' => $row[2] ?? '',
+                'subscribed' => $row[3] ?? 'yes',
+                'timezone_id' => $row[4] ?? '',
+                'country' => $row[5] ?? '',
+                'language' => $row[6] ?? 'en',
+                'suppressed' => $row[7] ?? 'FALSE',
+            ];
         }
     }
+    fclose($handle);
 }
 
 $total = count($rows);
 // Reverse to show newest first
 $rows = array_reverse($rows);
+
+// Handle CSV export
+if (isset($_GET['export']) && $_GET['export'] === 'csv') {
+    if (file_exists($csv_file)) {
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename="onesignal-subscribers-' . date('Y-m-d-His') . '.csv"');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+        
+        readfile($csv_file);
+        exit;
+    }
+}
 ?>
 <!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Unsubscribed Emails | Dioz Group</title>
+<title>OneSignal Subscribers | Dioz Group</title>
 <style>
 * {
     margin: 0;
@@ -68,7 +68,7 @@ body {
 }
 
 .container {
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 0 auto;
     background: white;
     border-radius: 8px;
@@ -115,11 +115,24 @@ h1 {
     text-align: center;
 }
 
+.info-box {
+    background: #e7f3ff;
+    border: 1px solid #b3d9ff;
+    padding: 12px;
+    margin-bottom: 16px;
+    border-radius: 6px;
+    color: #004085;
+    font-size: 13px;
+}
+
+.table-wrapper {
+    overflow-x: auto;
+}
+
 table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 10px;
-    overflow-x: auto;
 }
 
 thead {
@@ -132,6 +145,7 @@ th {
     text-align: left;
     font-weight: 600;
     font-size: 13px;
+    white-space: nowrap;
 }
 
 td {
@@ -150,22 +164,31 @@ tbody tr:hover {
     word-break: break-all;
 }
 
-.ip {
-    color: #666;
+.country {
+    background: #e8f0ff;
+    padding: 3px 6px;
+    border-radius: 3px;
+    font-weight: 500;
+}
+
+.language {
+    background: #f0e8ff;
+    padding: 3px 6px;
+    border-radius: 3px;
+    font-weight: 500;
+}
+
+.timezone {
     font-family: monospace;
     font-size: 12px;
-}
-
-.timestamp {
-    color: #999;
-    white-space: nowrap;
-    font-size: 12px;
-}
-
-.user-agent {
     color: #666;
-    font-size: 12px;
-    max-width: 200px;
+}
+
+.external-id {
+    font-family: monospace;
+    font-size: 11px;
+    color: #999;
+    max-width: 150px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -200,20 +223,43 @@ tbody tr:hover {
     background: #444;
 }
 
+.btn-success {
+    background: #22c55e;
+}
+
+.btn-success:hover {
+    background: #16a34a;
+}
+
 .empty {
     text-align: center;
     padding: 40px;
     color: #999;
 }
 
+.controls {
+    margin-top: 20px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
 @media (max-width: 768px) {
-    .user-agent {
-        max-width: 100px;
-    }
-    
     th, td {
         padding: 8px;
         font-size: 12px;
+    }
+    
+    .external-id {
+        max-width: 80px;
+    }
+    
+    .controls {
+        flex-direction: column;
+    }
+    
+    .btn {
+        width: 100%;
     }
 }
 </style>
@@ -221,47 +267,60 @@ tbody tr:hover {
 <body>
 
 <div class="container">
-    <h1>📧 Unsubscribed Emails</h1>
-    <p class="subtitle">Below is a list of all unsubscribed users.</p>
+    <h1>🔔 OneSignal Subscribers</h1>
+    <p class="subtitle">Data collected for OneSignal push notification importing.</p>
 
     <?php if ($error): ?>
         <div class="error"><?= htmlspecialchars($error) ?></div>
     <?php endif; ?>
 
     <div class="stats">
-        Total Unsubscribed: <strong><?= $total ?></strong>
+        <strong>Total Subscribers:</strong> <?= $total ?>
     </div>
+
+    <?php if ($total > 0): ?>
+    <div class="info-box">
+        ✓ <strong>Ready for OneSignal Import:</strong> Download the CSV file below and upload it to OneSignal dashboard (Audience → Import Subscribers → CSV Upload)
+    </div>
+    <?php endif; ?>
 
     <?php if ($total === 0): ?>
         <div class="notice">
-            ✅ No unsubscribes yet.
+            ✅ No subscribers yet.
         </div>
     <?php else: ?>
-        <table>
-            <thead>
-                <tr>
-                    <th style="width: 25%;">Email</th>
-                    <th style="width: 12%;">Source</th>
-                    <th style="width: 15%;">IP</th>
-                    <th style="width: 28%;">User Agent</th>
-                    <th style="width: 20%;">Date</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($rows as $row): ?>
-                <tr>
-                    <td class="email"><?= htmlspecialchars($row['email']) ?></td>
-                    <td><?= htmlspecialchars($row['source']) ?></td>
-                    <td class="ip"><?= htmlspecialchars($row['ip']) ?></td>
-                    <td class="user-agent" title="<?= htmlspecialchars($row['user_agent']) ?>"><?= htmlspecialchars($row['user_agent']) ?></td>
-                    <td class="timestamp"><?= htmlspecialchars($row['timestamp']) ?></td>
-                </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 15%;">Email</th>
+                        <th style="width: 12%;">Phone</th>
+                        <th style="width: 12%;">Country</th>
+                        <th style="width: 10%;">Language</th>
+                        <th style="width: 20%;">Timezone</th>
+                        <th style="width: 25%;">External ID</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($rows as $row): ?>
+                    <tr>
+                        <td class="email"><?= htmlspecialchars($row['email']) ?></td>
+                        <td><?= !empty($row['phone_number']) ? htmlspecialchars($row['phone_number']) : '—' ?></td>
+                        <td><?= !empty($row['country']) ? '<span class="country">' . htmlspecialchars($row['country']) . '</span>' : '—' ?></td>
+                        <td><?= !empty($row['language']) ? '<span class="language">' . strtoupper(htmlspecialchars($row['language'])) . '</span>' : '—' ?></td>
+                        <td class="timezone"><?= !empty($row['timezone_id']) ? htmlspecialchars($row['timezone_id']) : '—' ?></td>
+                        <td class="external-id" title="<?= htmlspecialchars($row['external_id']) ?>"><?= htmlspecialchars($row['external_id']) ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
 
-        <a href="/" class="btn">← Back to Home</a>
-        <button class="btn btn-secondary" onclick="window.print()">🖨️ Print</button>
+        <div class="controls">
+            <a href="/?export=csv" class="btn btn-success">📥 Download CSV for OneSignal</a>
+            <a href="/" class="btn">← Back to Home</a>
+            <button class="btn btn-secondary" onclick="window.print()">🖨️ Print</button>
+        </div>
     <?php endif; ?>
 
 </div>
