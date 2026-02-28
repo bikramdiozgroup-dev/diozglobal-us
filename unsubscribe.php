@@ -236,17 +236,17 @@
 </div>
 
 <script>
-// Fetch IP and country using multiple APIs for reliability
+// Fetch IP and country using server-side API (most reliable)
 async function getIPAndCountry() {
     try {
-        // Try ipapi.co first
-        const response = await fetch('https://ipapi.co/json/', { timeout: 3000 });
+        // Use your server's get-ip.php endpoint
+        const response = await fetch('get-ip.php');
         const data = await response.json();
         
         if (data.ip) {
             return {
                 ip: data.ip || '',
-                country: data.country_code || '',
+                country: data.country || '',
                 country_name: data.country_name || '',
                 city: data.city || '',
                 latitude: data.latitude || '',
@@ -254,43 +254,7 @@ async function getIPAndCountry() {
             };
         }
     } catch (err) {
-        console.log('ipapi.co failed, trying backup...');
-    }
-    
-    try {
-        // Fallback to ip-api.com (limited free tier but reliable)
-        const response = await fetch('http://ip-api.com/json/?fields=query,country,countryCode,city,lat,lon', { timeout: 3000 });
-        const data = await response.json();
-        
-        if (data.query) {
-            return {
-                ip: data.query || '',
-                country: data.countryCode || '',
-                country_name: data.country || '',
-                city: data.city || '',
-                latitude: data.lat || '',
-                longitude: data.lon || ''
-            };
-        }
-    } catch (err) {
-        console.log('ip-api.com failed, trying third option...');
-    }
-    
-    try {
-        // Third fallback - get IP from backend
-        const response = await fetch('https://diozglobal.us/get-ip.php');
-        const data = await response.json();
-        
-        return {
-            ip: data.ip || '',
-            country: data.country || '',
-            country_name: data.country_name || '',
-            city: data.city || '',
-            latitude: '',
-            longitude: ''
-        };
-    } catch (err) {
-        console.error('All geolocation APIs failed');
+        console.error('Error fetching geolocation:', err);
     }
     
     return {
