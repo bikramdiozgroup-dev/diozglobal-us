@@ -1,6 +1,17 @@
 <?php
 declare(strict_types=1);
 
+// Enable CORS
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type');
+header('Content-Type: application/json; charset=utf-8');
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit;
+}
+
 function get_client_ip(): string {
     if (!empty($_SERVER['HTTP_CF_CONNECTING_IP'])) return $_SERVER['HTTP_CF_CONNECTING_IP'];
     foreach (['HTTP_CLIENT_IP','HTTP_X_FORWARDED_FOR','REMOTE_ADDR'] as $k) {
@@ -106,11 +117,11 @@ function check_duplicate_email(string $email): array {
     if (file_exists($file)) {
         $content = file_get_contents($file);
         if ($content && stripos($content, $email) !== false) {
-            return ['valid' => false, 'message' => 'Email already unsubscribed.', 'check' => 'Duplicate Email Remover'];
+            return ['valid' => false, 'message' => 'Email already registered.', 'check' => 'Duplicate Email Checker'];
         }
     }
     
-    return ['valid' => true, 'message' => 'Email is unique.', 'check' => 'Duplicate Email Remover'];
+    return ['valid' => true, 'message' => 'Email is unique.', 'check' => 'Duplicate Email Checker'];
 }
 
 function detect_provider(string $email): array {
@@ -166,17 +177,21 @@ function validate_email_comprehensive(string $email): array {
     return ['valid' => true, 'checks' => $checks];
 }
 
-// Handle both JSON and form-data requests
+// Parse input - try JSON first, then form data
 $input = file_get_contents('php://input');
 $data = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Try JSON first
-    if (!empty($input) && $input[0] === '{') {
-        $data = json_decode($input, true) ?? [];
-    } else {
-        // Fall back to form data
-        $data = $_REQUEST;
+    if (!empty($input)) {
+        $json = json_decode($input, true);
+        if ($json && is_array($json)) {
+            $data = $json;
+        }
+    }
+    
+    // Fallback to $_POST if no JSON
+    if (empty($data)) {
+        $data = $_POST;
     }
 }
 
@@ -184,7 +199,6 @@ $email = isset($data['email']) ? trim($data['email']) : null;
 
 if (!$email) {
     http_response_code(400);
-    header('Content-Type: application/json');
     echo json_encode(['success' => false, 'message' => 'Email is required.']);
     exit;
 }
@@ -193,7 +207,6 @@ $validation = validate_email_comprehensive($email);
 
 if (!$validation['valid']) {
     http_response_code(400);
-    header('Content-Type: application/json');
     
     $failed_message = 'Email validation failed.';
     foreach ($validation['checks'] as $check) {
@@ -222,8 +235,11 @@ try {
     
     // Get timestamp
     $timestamp = date('Y-m-d H:i:s');
-    $ip = get_client_ip();
+    $server_ip = get_client_ip();
     $ua = get_user_agent();
+    
+    // Use IP from client if available, otherwise use server-detected IP
+    $ip = isset($data['ip']) && !empty($data['ip']) ? trim($data['ip']) : $server_ip;
     
     // Data for OneSignal format
     $onesignal_data = [
@@ -231,37 +247,48 @@ try {
         'email' => $email,
         'phone_number' => $phone,
         'country' => isset($data['country']) ? trim($data['country']) : '',
+        'country_name' => isset($data['country_name']) ? trim($data['country_name']) : '',
+        'city' => isset($data['city']) ? trim($data['city']) : '',
         'language' => isset($data['language']) ? trim($data['language']) : 'en',
         'timezone_id' => isset($data['timezone_id']) ? trim($data['timezone_id']) : 'UTC',
         'subscribed' => 'yes',
         'ip' => $ip,
         'user_agent' => $ua,
         'source' => isset($data['source']) ? trim($data['source']) : 'web',
+        'device_type' => isset($data['device_type']) ? trim($data['device_type']) : '',
+        'browser_name' => isset($data['browser_name']) ? trim($data['browser_name']) : '',
+        'latitude' => isset($data['latitude']) ? trim($data['latitude']) : '',
+        'longitude' => isset($data['longitude']) ? trim($data['longitude']) : '',
         'timestamp' => $timestamp,
     ];
     
     // Append to text log (keep original format for compatibility)
-    $log_entry = $email . ' | ' . $timestamp . ' | IP: ' . $ip . ' | UA: ' . $ua . PHP_EOL;
+    $log_entry = $email . ' | ' . $timestamp . ' | IP: ' . $ip . ' | Country: ' . $onesignal_data['country'] . ' | UA: ' . $ua . PHP_EOL;
     file_put_contents($file, $log_entry, FILE_APPEND | LOCK_EX);
     
     // Append to CSV for OneSignal import
     $csv_exists = file_exists($csv_file);
     
-    // OneSignal CSV format: external_id, email, phone_number, subscribed, timezone_id, country, language, suppressed
+    // OneSignal CSV format with IP and Country
     $csv_line = implode(',', [
-        '"' . $onesignal_data['external_id'] . '"',
-        '"' . $onesignal_data['email'] . '"',
-        '"' . $onesignal_data['phone_number'] . '"',
+        '"' . str_replace('"', '""', $onesignal_data['external_id']) . '"',
+        '"' . str_replace('"', '""', $onesignal_data['email']) . '"',
+        '"' . str_replace('"', '""', $onesignal_data['phone_number']) . '"',
         '"' . $onesignal_data['subscribed'] . '"',
-        '"' . $onesignal_data['timezone_id'] . '"',
-        '"' . $onesignal_data['country'] . '"',
-        '"' . $onesignal_data['language'] . '"',
-        '"FALSE"', // suppressed - set to FALSE so they receive notifications
+        '"' . str_replace('"', '""', $onesignal_data['timezone_id']) . '"',
+        '"' . str_replace('"', '""', $onesignal_data['country']) . '"',
+        '"' . str_replace('"', '""', $onesignal_data['country_name']) . '"',
+        '"' . str_replace('"', '""', $onesignal_data['city']) . '"',
+        '"' . str_replace('"', '""', $onesignal_data['language']) . '"',
+        '"' . str_replace('"', '""', $onesignal_data['ip']) . '"',
+        '"' . str_replace('"', '""', $onesignal_data['device_type']) . '"',
+        '"' . str_replace('"', '""', $onesignal_data['browser_name']) . '"',
+        '"FALSE"',
     ]) . PHP_EOL;
     
     // Add header if file doesn't exist
     if (!$csv_exists) {
-        $header = 'external_id,email,phone_number,subscribed,timezone_id,country,language,suppressed' . PHP_EOL;
+        $header = 'external_id,email,phone_number,subscribed,timezone_id,country,country_name,city,language,ip,device_type,browser_name,suppressed' . PHP_EOL;
         file_put_contents($csv_file, $header, LOCK_EX);
     }
     
@@ -269,7 +296,6 @@ try {
     file_put_contents($csv_file, $csv_line, FILE_APPEND | LOCK_EX);
     
     http_response_code(200);
-    header('Content-Type: application/json');
     echo json_encode([
         'success' => true,
         'message' => 'Information recorded successfully.',
@@ -281,7 +307,6 @@ try {
 } catch (Exception $e) {
     error_log('Unsubscribe error: ' . $e->getMessage());
     http_response_code(500);
-    header('Content-Type: application/json');
     echo json_encode(['success' => false, 'message' => 'Server error. Please try again later.']);
     exit;
 }
